@@ -4,49 +4,28 @@ let quotes = [
   { text: "Success is not final, failure is not fatal: It is the courage to continue that counts.", category: "Success" }
 ];
 
-// Load and save quotes to localStorage
-function loadQuotes() {
-  const savedQuotes = localStorage.getItem("quotes");
-  if (savedQuotes) {
-    quotes = JSON.parse(savedQuotes);
-  }
-}
+const quoteDisplay = document.getElementById("quoteDisplay");
+const categoryFilter = document.getElementById("categoryFilter");
+const syncStatus = document.getElementById("syncStatus");
 
-function saveQuotes() {
-  localStorage.setItem("quotes", JSON.stringify(quotes));
-}
-
-// Show random quote filtered by category
 function showRandomQuote() {
-  const filterSelect = document.getElementById("categoryFilter");
-  const selectedCategory = filterSelect.value;
-
-  let filteredQuotes = quotes;
-  if (selectedCategory !== "all") {
-    filteredQuotes = quotes.filter(q => q.category === selectedCategory);
-  }
-
-  const quoteDisplay = document.getElementById("quoteDisplay");
-
+  const filteredQuotes = getFilteredQuotes();
   if (filteredQuotes.length === 0) {
-    quoteDisplay.innerHTML = "<p>No quotes available for this category.</p>";
+    quoteDisplay.innerHTML = `<p>No quotes available for this category.</p>`;
     return;
   }
-
   const randomIndex = Math.floor(Math.random() * filteredQuotes.length);
   const quote = filteredQuotes[randomIndex];
-
   quoteDisplay.innerHTML = `
     <blockquote>"${quote.text}"</blockquote>
     <p><strong>Category:</strong> ${quote.category}</p>
   `;
+  sessionStorage.setItem("lastQuote", JSON.stringify(quote));
 }
 
-// Add a new quote
 function addQuote() {
   const textInput = document.getElementById("newQuoteText");
   const categoryInput = document.getElementById("newQuoteCategory");
-
   const newText = textInput.value.trim();
   const newCategory = categoryInput.value.trim();
 
@@ -58,40 +37,61 @@ function addQuote() {
   const newQuote = { text: newText, category: newCategory };
   quotes.push(newQuote);
   saveQuotes();
+  populateCategories();
+  filterQuotes();
 
   textInput.value = "";
   categoryInput.value = "";
 
-  populateCategories();
   showRandomQuote();
 }
 
-// Populate categories dropdown
 function populateCategories() {
-  const categoryFilter = document.getElementById("categoryFilter");
-  const categories = Array.from(new Set(quotes.map(q => q.category)));
-
-  categoryFilter.innerHTML = `<option value="all">All Categories</option>`;
+  const categories = ["all"];
+  quotes.forEach(q => {
+    if (!categories.includes(q.category)) {
+      categories.push(q.category);
+    }
+  });
+  categoryFilter.innerHTML = "";
   categories.forEach(cat => {
     const option = document.createElement("option");
     option.value = cat;
-    option.textContent = cat;
+    option.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
     categoryFilter.appendChild(option);
   });
 
-  const savedFilter = localStorage.getItem("selectedCategory");
-  if (savedFilter && categories.includes(savedFilter)) {
-    categoryFilter.value = savedFilter;
-  } else {
-    categoryFilter.value = "all";
+  const savedCategory = localStorage.getItem("selectedCategory");
+  if (savedCategory && categories.includes(savedCategory)) {
+    categoryFilter.value = savedCategory;
   }
 }
 
 function filterQuotes() {
-  const categoryFilter = document.getElementById("categoryFilter");
-  const selectedCategory = categoryFilter.value;
-  localStorage.setItem("selectedCategory", selectedCategory);
+  const selected = categoryFilter.value;
+  localStorage.setItem("selectedCategory", selected);
   showRandomQuote();
+}
+
+function getFilteredQuotes() {
+  const selected = categoryFilter.value;
+  if (selected === "all") return quotes;
+  return quotes.filter(q => q.category === selected);
+}
+
+function saveQuotes() {
+  localStorage.setItem("quotes", JSON.stringify(quotes));
+}
+
+function loadQuotes() {
+  const stored = localStorage.getItem("quotes");
+  if (stored) {
+    try {
+      quotes = JSON.parse(stored);
+    } catch {
+      quotes = [];
+    }
+  }
 }
 
 function exportToJson() {
@@ -106,129 +106,80 @@ function exportToJson() {
 }
 
 function importFromJsonFile(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function(e) {
+  const fileReader = new FileReader();
+  fileReader.onload = function (e) {
     try {
       const importedQuotes = JSON.parse(e.target.result);
-      if (!Array.isArray(importedQuotes)) throw new Error("Invalid JSON format");
-
-      importedQuotes.forEach(q => {
-        if (q.text && q.category) {
-          const exists = quotes.some(existing => existing.text === q.text);
-          if (!exists) quotes.push(q);
-        }
-      });
-
-      saveQuotes();
-      populateCategories();
-      showRandomQuote();
-      alert("Quotes imported successfully!");
-    } catch (error) {
-      alert("Failed to import quotes: " + error.message);
+      if (Array.isArray(importedQuotes)) {
+        quotes.push(...importedQuotes);
+        saveQuotes();
+        populateCategories();
+        filterQuotes();
+        alert("Quotes imported successfully!");
+      } else {
+        alert("Invalid JSON format!");
+      }
+    } catch {
+      alert("Failed to parse JSON.");
     }
   };
-  reader.readAsText(file);
+  fileReader.readAsText(event.target.files[0]);
 }
 
-// *** دالة جلب الاقتباسات من السيرفر (GET) ***
 async function fetchQuotesFromServer() {
   try {
     const response = await fetch("https://jsonplaceholder.typicode.com/posts?_limit=5");
+    if (!response.ok) throw new Error("Network response was not ok");
     const data = await response.json();
-
-    return data.map(item => ({
-      text: item.body,
+    return data.map(post => ({
+      text: post.title,
       category: "Server"
     }));
-  } catch (error) {
-    console.error("Fetch failed:", error);
+  } catch {
     return [];
   }
 }
 
-// *** دالة ارسال الاقتباسات للسيرفر (POST) ***
-async function postQuotesToServer(newQuotes) {
+async function postQuoteToServer(quote) {
   try {
     const response = await fetch("https://jsonplaceholder.typicode.com/posts", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(newQuotes)
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(quote)
     });
-
-    if (!response.ok) throw new Error("Failed to post quotes");
-    const data = await response.json();
-    console.log("Posted data:", data);
-    return true;
-  } catch (error) {
-    console.error("Post failed:", error);
-    return false;
+    if (!response.ok) throw new Error("Failed to post");
+    return await response.json();
+  } catch {
+    return null;
   }
 }
 
-// *** دالة المزامنة الرئيسية ***
-// بتجلب البيانات من السيرفر، وتحل التعارضات، وترسل بيانات جديدة إذا في
 async function syncQuotes() {
-  const syncStatus = document.getElementById("syncStatus");
-  syncStatus.style.color = "black";
-  syncStatus.textContent = "Syncing with server...";
-
+  syncStatus.textContent = "Syncing...";
   const serverQuotes = await fetchQuotesFromServer();
-
-  // Conflict resolution: إذا الاقتباس موجود بالسيرفر ما نضيفش، نضيف اللي مش موجود فقط
-  let newQuotesToPost = [];
-
-  serverQuotes.forEach(serverQuote => {
-    const exists = quotes.some(q => q.text === serverQuote.text);
-    if (!exists) {
-      quotes.push(serverQuote);
-    }
-  });
-
-  // نبحث إذا عندنا اقتباسات جديدة مش موجودة في السيرفر
-  quotes.forEach(localQuote => {
-    const existsOnServer = serverQuotes.some(sq => sq.text === localQuote.text);
-    if (!existsOnServer) {
-      newQuotesToPost.push(localQuote);
-    }
-  });
-
-  // نرسل الاقتباسات الجديدة للسيرفر
-  if (newQuotesToPost.length > 0) {
-    const postSuccess = await postQuotesToServer(newQuotesToPost);
-    if (!postSuccess) {
-      syncStatus.style.color = "red";
-      syncStatus.textContent = "Failed to post some quotes to server.";
-      return;
-    }
-  }
-
+  // Server data overwrites local if conflict
+  quotes = serverQuotes.length ? serverQuotes : quotes;
   saveQuotes();
   populateCategories();
-  showRandomQuote();
-
+  filterQuotes();
   syncStatus.style.color = "green";
-  syncStatus.textContent = "Sync completed!";
-
+  syncStatus.textContent = "Quotes synced with server!";
   setTimeout(() => {
     syncStatus.textContent = "";
   }, 4000);
 }
 
-// مزامنة دورية كل 60 ثانية
-setInterval(() => {
-  syncQuotes();
-}, 60000);
+function periodicSync() {
+  setInterval(() => {
+    syncQuotes();
+  }, 60000); // every 60 seconds
+}
 
-window.onload = () => {
-  loadQuotes();
-  populateCategories();
-  showRandomQuote();
+loadQuotes();
+populateCategories();
+filterQuotes();
+showRandomQuote();
+periodicSync();
 
-  document.getElementById("newQuote").addEventListener("click", showRandomQuote);
-  document.getElementById("addQuoteBtn").addEventListener("click", addQuote);
-};
+document.getElementById("newQuote").addEventListener("click", showRandomQuote);
+document.getElementById("importFile").addEventListener("change", importFromJsonFile);
