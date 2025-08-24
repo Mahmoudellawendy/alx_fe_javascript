@@ -2,41 +2,73 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dynamic Quote Generator</title>
 </head>
 <body>
-
   <h1>Dynamic Quote Generator</h1>
 
-  <select id="categoryFilter" onchange="filterQuotes()">
-    <option value="all">All Categories</option>
-  </select>
-
   <div id="quoteDisplay"></div>
-
   <button id="newQuote">Show New Quote</button>
 
   <div>
     <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
     <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
-    <button onclick="addQuote()">Add Quote</button>
+    <button id="addQuoteBtn">Add Quote</button>
   </div>
 
-  <hr />
+  <script>
+    // Array of quote objects
+    let quotes = [
+      { text: "Knowledge is power.", category: "Education" },
+      { text: "Life is what happens when you're busy making other plans.", category: "Life" },
+      { text: "Success is not final, failure is not fatal: It is the courage to continue that counts.", category: "Success" }
+    ];
 
-  <div>
-    <button onclick="exportToJson()">Export Quotes as JSON</button>
-    <input type="file" id="importFile" accept=".json" onchange="importFromJsonFile(event)" />
-  </div>
+    // Display a random quote
+    function showRandomQuote() {
+      const randomIndex = Math.floor(Math.random() * quotes.length);
+      const quote = quotes[randomIndex];
+      const quoteDisplay = document.getElementById("quoteDisplay");
 
-  <hr />
+      quoteDisplay.innerHTML = `
+        <blockquote>"${quote.text}"</blockquote>
+        <p><strong>Category:</strong> ${quote.category}</p>
+      `;
+    }
 
-  <div>
-    <button onclick="syncWithServer()">Sync with Server</button>
-    <p id="syncStatus"></p>
-  </div>
+    // Add a new quote from input fields
+    function addQuote() {
+      const textInput = document.getElementById("newQuoteText");
+      const categoryInput = document.getElementById("newQuoteCategory");
 
-  <script src="script.js"></script>
+      const newText = textInput.value.trim();
+      const newCategory = categoryInput.value.trim();
+
+      if (newText === "" || newCategory === "") {
+        alert("Please fill in both the quote and the category.");
+        return;
+      }
+
+      const newQuote = {
+        text: newText,
+        category: newCategory
+      };
+
+      quotes.push(newQuote);
+
+      textInput.value = "";
+      categoryInput.value = "";
+
+      showRandomQuote();
+    }
+
+    // Event listeners
+    document.getElementById("newQuote").addEventListener("click", showRandomQuote);
+    document.getElementById("addQuoteBtn").addEventListener("click", addQuote);
+
+    // Show a random quote initially
+    showRandomQuote();
+  </script>
 </body>
 </html>
