@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dynamic Quote Generator</title>
 </head>
 <body>
 
   <h1>Dynamic Quote Generator</h1>
 
+  <label for="categoryFilter">Filter by category:</label>
   <select id="categoryFilter" onchange="filterQuotes()">
     <option value="all">All Categories</option>
   </select>
@@ -17,10 +18,10 @@
 
   <button id="newQuote">Show New Quote</button>
 
-  <div>
+  <div style="margin-top: 20px;">
     <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
     <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
-    <button onclick="addQuote()">Add Quote</button>
+    <button id="addQuoteBtn">Add Quote</button>
   </div>
 
   <hr />
@@ -34,7 +35,7 @@
 
   <div>
     <button onclick="syncWithServer()">Sync with Server</button>
-    <p id="syncStatus"></p>
+    <p id="syncStatus" style="color: green;"></p>
   </div>
 
   <script src="script.js"></script>
