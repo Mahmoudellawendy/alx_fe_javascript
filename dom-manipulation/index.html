@@ -2,73 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dynamic Quote Generator</title>
 </head>
 <body>
   <h1>Dynamic Quote Generator</h1>
 
   <div id="quoteDisplay"></div>
+
   <button id="newQuote">Show New Quote</button>
 
-  <div>
-    <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
-    <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
-    <button id="addQuoteBtn">Add Quote</button>
-  </div>
+  <div id="formContainer"></div>
 
-  <script>
-    // Array of quote objects
-    let quotes = [
-      { text: "Knowledge is power.", category: "Education" },
-      { text: "Life is what happens when you're busy making other plans.", category: "Life" },
-      { text: "Success is not final, failure is not fatal: It is the courage to continue that counts.", category: "Success" }
-    ];
-
-    // Display a random quote
-    function showRandomQuote() {
-      const randomIndex = Math.floor(Math.random() * quotes.length);
-      const quote = quotes[randomIndex];
-      const quoteDisplay = document.getElementById("quoteDisplay");
-
-      quoteDisplay.innerHTML = `
-        <blockquote>"${quote.text}"</blockquote>
-        <p><strong>Category:</strong> ${quote.category}</p>
-      `;
-    }
-
-    // Add a new quote from input fields
-    function addQuote() {
-      const textInput = document.getElementById("newQuoteText");
-      const categoryInput = document.getElementById("newQuoteCategory");
-
-      const newText = textInput.value.trim();
-      const newCategory = categoryInput.value.trim();
-
-      if (newText === "" || newCategory === "") {
-        alert("Please fill in both the quote and the category.");
-        return;
-      }
-
-      const newQuote = {
-        text: newText,
-        category: newCategory
-      };
-
-      quotes.push(newQuote);
-
-      textInput.value = "";
-      categoryInput.value = "";
-
-      showRandomQuote();
-    }
-
-    // Event listeners
-    document.getElementById("newQuote").addEventListener("click", showRandomQuote);
-    document.getElementById("addQuoteBtn").addEventListener("click", addQuote);
-
-    // Show a random quote initially
-    showRandomQuote();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
